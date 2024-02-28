@@ -1,4 +1,5 @@
 use zksync_multivm::VmInstance;
+use zksync_utils::{bytecode::hash_bytecode, u256_to_h256};
 
 fn default_l1_batch() -> L1BatchEnv {
     L1BatchEnv {
@@ -20,21 +21,28 @@ fn default_l1_batch() -> L1BatchEnv {
     }
 }
 
-pub fn initVM(...) {
-    VmInstance::new(l1_batch_env, system_env, storage_view.clone());
-}
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+fn default_system_env() -> SystemEnv {
+    SystemEnv {
+        zk_porter_available: false,
+        version: ProtocolVersionId::latest(),
+        base_system_smart_contracts: BaseSystemContracts::playground(),
+        gas_limit: BLOCK_GAS_LIMIT,
+        execution_mode: TxExecutionMode::VerifyExecute,
+        default_validation_computational_gas_limit: BLOCK_GAS_LIMIT,
+        chain_id: L2ChainId::from(270),
     }
+}
+
+fn default_empty_storage() -> InMemoryStorage {
+    InMemoryStorage::with_system_contracts(hash_bytecode)
+}
+
+pub fn init_vm() {
+    let l1_batch_env = default_l1_batch();
+    let system_env = default_system_env();
+    let mut raw_storage = default_empty_storage();
+    let storage_ptr = StorageView::new(raw_storage).to_rc_ptr();
+
+    let vm = VmInstance::new(l1_batch_env, system_env, storage_ptr.clone());
+    vm.execute(VmExecutionMode::OneTx);
 }

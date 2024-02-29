@@ -1,16 +1,11 @@
 use multivm::VmInstance;
-use zksync_utils::bytecode::hash_bytecode;
-use multivm::vm_latest::L1BatchEnv;
-use multivm::vm_latest::L2BlockEnv;
-use multivm::vm_latest::SystemEnv;
-use multivm::vm_latest::constants::BLOCK_GAS_LIMIT;
-use multivm::vm_latest::TxExecutionMode;
-use multivm::vm_latest::VmExecutionMode;
-use zksync_state::{InMemoryStorage, StorageView};
+use multivm::vm_latest::{L1BatchEnv, L2BlockEnv, SystemEnv, TxExecutionMode, VmExecutionMode, HistoryDisabled, constants::BLOCK_GAS_LIMIT};
 use multivm::interface::VmInterface;
+use zksync_state::{InMemoryStorage, StorageView};
 use zksync_types::{L1BatchNumber,fee_model::BatchFeeInput, Address,block::MiniblockHasher, MiniblockNumber, ProtocolVersionId, L2ChainId};
 use zksync_contracts::BaseSystemContracts;
-use multivm::vm_latest::HistoryDisabled;
+use zksync_utils::bytecode::hash_bytecode;
+
 fn default_l1_batch() -> L1BatchEnv {
     L1BatchEnv {
         previous_batch_hash: None,

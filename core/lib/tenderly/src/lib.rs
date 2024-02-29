@@ -36,7 +36,7 @@ fn default_system_env() -> SystemEnv {
     SystemEnv {
         zk_porter_available: false,
         version: ProtocolVersionId::latest(),
-        base_system_smart_contracts: BaseSystemContracts::playground(),
+        base_system_smart_contracts: BaseSystemContracts::playiground(),
         gas_limit: BLOCK_GAS_LIMIT,
         execution_mode: TxExecutionMode::VerifyExecute,
         default_validation_computational_gas_limit: BLOCK_GAS_LIMIT,

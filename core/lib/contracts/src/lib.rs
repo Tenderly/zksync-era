@@ -192,8 +192,12 @@ impl SystemContractsRepo {
 }
 
 pub fn read_bootloader_code(bootloader_type: &str) -> Vec<u8> {
+    // read_zbin_bytecode(format!(
+    //     "contracts/system-contracts/bootloader/build/artifacts/{}.yul.zbin",
+    //     bootloader_type
+    // ))
     read_zbin_bytecode(format!(
-        "contracts/system-contracts/bootloader/build/artifacts/{}.yul.zbin",
+        "/Users/nebojsa/Documents/projects/tenderly-core/pkg/vm/execenv/contracts/system-contracts/bootloader/build/artifacts/{}.yul.zbin",
         bootloader_type
     ))
 }

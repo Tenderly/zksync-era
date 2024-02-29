@@ -3,7 +3,13 @@ name = "tenderly"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-zksync_multivm = { path = "../multivm" }
+multivm = { path = "../multivm" }
+zksync_utils = { path = "../utils" }
+zksync_state = { path = "../state"}
+zksync_types= { path = "../types"}
+zksync_contracts= { path = "../contracts"}

@@ -13,3 +13,4 @@ zksync_utils = { path = "../utils" }
 zksync_state = { path = "../state"}
 zksync_types= { path = "../types"}
 zksync_contracts= { path = "../contracts"}
+tenderly_cffi= { path = "../tenderly_cffi" }

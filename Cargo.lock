@@ -726,6 +726,7 @@ dependencies = [
  "clang-sys",
  "lazy_static",
  "lazycell",
+ "log",
  "peeking_take_while",
  "prettyplease",
  "proc-macro2 1.0.69",
@@ -734,6 +735,7 @@ dependencies = [
  "rustc-hash",
  "shlex",
  "syn 2.0.38",
+ "which",
 ]
 
 [[package]]
@@ -6724,10 +6726,18 @@ name = "tenderly"
 version = "0.1.0"
 dependencies = [
  "multivm",
+ "tenderly_cffi",
  "zksync_contracts",
  "zksync_state",
  "zksync_types",
  "zksync_utils",
+]
+
+[[package]]
+name = "tenderly_cffi"
+version = "0.1.0"
+dependencies = [
+ "bindgen",
 ]
 
 [[package]]

@@ -33,6 +33,7 @@ pub struct TransactionExecutorImpl {
     block_timestamp: u64,
     block_l1_gas_price: u64,
     block_l2_gas_price: u64,
+    block_parent_hash: H256,
 
     execution_result: VmExecutionResultAndLogs,
 
@@ -65,6 +66,7 @@ impl TransactionExecutorImpl {
             block_timestamp: 0,
             block_l1_gas_price: 0,
             block_l2_gas_price: 0,
+            block_parent_hash: Default::default(),
             execution_result: VmExecutionResultAndLogs {
                 result: Success { output: vec![] },
                 logs: Default::default(),
@@ -86,7 +88,7 @@ impl TransactionExecutorImpl {
             first_l2_block: L2BlockEnv {
                 number: self.block_number,
                 timestamp: self.block_timestamp,
-                prev_block_hash: Default::default(),
+                prev_block_hash: self.block_parent_hash,
                 max_virtual_blocks_to_create: 1,
             },
         }
@@ -96,9 +98,9 @@ impl TransactionExecutorImpl {
         SystemEnv {
             zk_porter_available: false,
             version: Default::default(),
-            base_system_smart_contracts: BaseSystemContracts::playground(),
+            base_system_smart_contracts: BaseSystemContracts::load_from_disk(),
             gas_limit: BLOCK_GAS_LIMIT,
-            execution_mode: TxExecutionMode::VerifyExecute,
+            execution_mode: TxExecutionMode::EthCall,
             default_validation_computational_gas_limit: BLOCK_GAS_LIMIT,
             chain_id: L2ChainId::from(324),
         }
@@ -142,6 +144,7 @@ impl TransactionExecutor for TransactionExecutorImpl {
     fn set_block_base_fee(&mut self, _value: &[u8]) {}
     fn set_block_prevrandao(&mut self, _value: &[u8]) {}
     fn set_block_excess_blob_gas(&mut self, _value: u64) {}
+    fn set_block_parent_hash(&mut self, _value: &[u8]) { self.block_parent_hash.assign_from_slice(_value); }
 
     fn set_tx_hash(&mut self, _value: &[u8]) {}
     fn set_tx_from(&mut self, _value: &[u8]) { self.from = Address::from_slice(_value); }

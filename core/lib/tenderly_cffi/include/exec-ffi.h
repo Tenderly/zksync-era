@@ -17,6 +17,7 @@ void exec_free_tx_executor(TransactionExecutor *tx);
 #define TX_PROPERTY_BLOCK_BASE_FEE 0x5
 #define TX_PROPERTY_BLOCK_PREVRANDAO 0x6
 #define TX_PROPERTY_BLOCK_EXCESS_BLOB_GAS 0x7
+#define TX_PROPERTY_BLOCK_PARENT_HASH 0x8
 
 #define TX_PROPERTY_TX_HASH 0x100
 #define TX_PROPERTY_TX_FROM 0x101

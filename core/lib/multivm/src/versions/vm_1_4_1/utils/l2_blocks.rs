@@ -62,15 +62,19 @@ pub fn load_last_l2_block<S: ReadStorage>(storage: StoragePtr<S>) -> Option<L2Bl
     let mut storage_ptr = storage.borrow_mut();
     let current_l2_block_info = storage_ptr.read_value(&current_l2_block_info_key);
     let (block_number, block_timestamp) = unpack_block_info(h256_to_u256(current_l2_block_info));
+    println!("Block number0x{:x} and timestamp 0x{:x}", block_number, block_timestamp);
     let block_number = block_number as u32;
     if block_number == 0 {
         // The block does not exist yet
         return None;
     }
 
+
     // Get previous block hash
     let position = get_l2_block_hash_key(block_number - 1);
+    println!("POSITION ADDRESS:0x{:x}, KEY 0X{:x}", position.address(),position.key());
     let prev_block_hash = storage_ptr.read_value(&position);
+    println!("PREVIOUS BLOCK HASH 0x{:x}", prev_block_hash);
 
     // Get current tx rolling hash
     let position = StorageKey::new(
@@ -86,7 +90,7 @@ pub fn load_last_l2_block<S: ReadStorage>(storage: StoragePtr<S>) -> Option<L2Bl
         prev_block_hash,
         current_tx_rolling_hash,
     );
-
+    println!("CURRENT BLOCK HASH 0x{:x}", prev_block_hash);
     Some(L2Block {
         number: block_number,
         timestamp: block_timestamp,

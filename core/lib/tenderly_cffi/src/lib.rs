@@ -39,6 +39,7 @@ pub trait TransactionExecutor: Default {
     fn set_block_base_fee(&mut self, _value: &[u8]) {}
     fn set_block_prevrandao(&mut self, _value: &[u8]) {}
     fn set_block_excess_blob_gas(&mut self, _value: u64) {}
+    fn set_block_parent_hash(&mut self, _value: &[u8]) {}
 
     fn set_tx_hash(&mut self, _value: &[u8]) {}
     fn set_tx_from(&mut self, _value: &[u8]) {}
@@ -144,6 +145,7 @@ pub fn exec_tx_set_property_data<T: TransactionExecutor>(
         capi::TX_PROPERTY_BLOCK_DIFFICULTY => tx.set_block_difficulty(slice),
         capi::TX_PROPERTY_BLOCK_BASE_FEE => tx.set_block_base_fee(slice),
         capi::TX_PROPERTY_BLOCK_PREVRANDAO => tx.set_block_prevrandao(slice),
+        capi::TX_PROPERTY_BLOCK_PARENT_HASH => tx.set_block_parent_hash(slice),
         capi::TX_PROPERTY_TX_HASH => tx.set_tx_hash(slice),
         capi::TX_PROPERTY_TX_FROM => tx.set_tx_from(slice),
         capi::TX_PROPERTY_TX_TO => tx.set_tx_to(slice),

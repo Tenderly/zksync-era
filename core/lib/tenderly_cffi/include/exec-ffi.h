@@ -32,6 +32,9 @@ void exec_free_tx_executor(TransactionExecutor *tx);
 #define TX_PROPERTY_TX_DATA 0x10A
 #define TX_PROPERTY_TX_ACCESS_LIST 0x10B
 #define TX_PROPERTY_TX_BLOB_HASHES 0x10C
+#define TX_PROPERTY_TX_R 0x10D
+#define TX_PROPERTY_TX_S 0x10E
+#define TX_PROPERTY_TX_V 0x10F
 
 #define TX_PROPERTY_OPT_CHECK_NONCE 0x200
 #define TX_PROPERTY_OPT_NO_BASE_FEE 0x201

@@ -6,7 +6,7 @@ use multivm::vm_latest::HistoryEnabled;
 use multivm::VmInstance;
 use multivm::zk_evm_latest::ethereum_types::{H256, U256};
 use zksync_state::{ReadStorage, StorageView};
-use zksync_types::{Address, Execute, L2ChainId, L2TxCommonData, Nonce, StorageKey, StorageValue, Transaction};
+use zksync_types::{Address, Execute, L2ChainId, L2TxCommonData, Nonce, PackedEthSignature, StorageKey, StorageValue, Transaction};
 use tenderly_cffi::{GetBalanceFunc, GetCodeFunc, GetCodeHashFunc, GetCodeLengthFunc, GetNonceFunc, GetStorageFunc, TransactionExecutor};
 use zksync_contracts::BaseSystemContracts;
 use zksync_types::ExecuteTransactionCommon::L2;
@@ -22,7 +22,9 @@ pub struct TransactionExecutorImpl {
     fee: Fee,
     from: Address,
     to: Address,
-    signature: Vec<u8>,
+    r: H256,
+    s: H256,
+    v: u8,
     transaction_type: TransactionType,
     paymaster_params: PaymasterParams,
     calldata: Vec<u8>,
@@ -31,8 +33,6 @@ pub struct TransactionExecutorImpl {
 
     block_number: u32,
     block_timestamp: u64,
-    block_l1_gas_price: u64,
-    block_l2_gas_price: u64,
     block_parent_hash: H256,
 
     execution_result: VmExecutionResultAndLogs,
@@ -56,7 +56,9 @@ impl TransactionExecutorImpl {
             fee: Default::default(),
             from: Default::default(),
             to: Default::default(),
-            signature: vec![],
+            r: Default::default(),
+            s: Default::default(),
+            v: 0,
             transaction_type: TransactionType::LegacyTransaction,
             paymaster_params: Default::default(),
             calldata: vec![],
@@ -64,8 +66,6 @@ impl TransactionExecutorImpl {
             factory_deps: None,
             block_number: 0,
             block_timestamp: 0,
-            block_l1_gas_price: 0,
-            block_l2_gas_price: 0,
             block_parent_hash: Default::default(),
             execution_result: VmExecutionResultAndLogs {
                 result: Success { output: vec![] },
@@ -112,7 +112,7 @@ impl TransactionExecutorImpl {
                 nonce: self.nonce,
                 fee: self.fee.clone(),
                 initiator_address: self.from,
-                signature: self.signature.clone(),
+                signature: PackedEthSignature::from_rsv(&self.r, &self.s, self.v).serialize_packed().to_vec(),
                 transaction_type: self.transaction_type,
                 input: None, // not to be confused with calldata
                 paymaster_params: self.paymaster_params.clone(),
@@ -159,6 +159,9 @@ impl TransactionExecutor for TransactionExecutorImpl {
     fn set_tx_data(&mut self, _value: &[u8]) { self.calldata = _value.to_vec(); }
     fn set_tx_access_list(&mut self, _value: &[u8]) {}
     fn set_tx_blob_hashes(&mut self, _value: &[u8]) {}
+    fn set_tx_r(&mut self, _value: &[u8]) { self.r.assign_from_slice(_value); }
+    fn set_tx_s(&mut self, _value: &[u8]) { self.s.assign_from_slice(_value); }
+    fn set_tx_v(&mut self, _value: u64) { self.v = _value as u8; }
 
     fn set_opt_check_nonce(&mut self, _value: bool) {}
     fn set_opt_no_base_fee(&mut self, _value: bool) {}
@@ -208,7 +211,7 @@ impl Default for DataProvider {
 }
 
 impl Debug for DataProvider {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
         Ok(())
     }
 }
@@ -222,15 +225,15 @@ impl ReadStorage for &mut DataProvider {
         StorageValue::from_slice(&val)
     }
 
-    fn is_write_initial(&mut self, key: &StorageKey) -> bool {
-        todo!()
+    fn is_write_initial(&mut self, _key: &StorageKey) -> bool {
+        todo!("is_write_initial not implemented")
     }
 
-    fn load_factory_dep(&mut self, hash: H256) -> Option<Vec<u8>> {
-        todo!()
+    fn load_factory_dep(&mut self, _hash: H256) -> Option<Vec<u8>> {
+        todo!("load_factory_deps not implemented")
     }
 
-    fn get_enumeration_index(&mut self, key: &StorageKey) -> Option<u64> {
-        todo!()
+    fn get_enumeration_index(&mut self, _key: &StorageKey) -> Option<u64> {
+        todo!("get_enumeration_index not implemented")
     }
 }

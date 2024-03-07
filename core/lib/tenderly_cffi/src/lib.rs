@@ -54,6 +54,9 @@ pub trait TransactionExecutor: Default {
     fn set_tx_data(&mut self, _value: &[u8]) {}
     fn set_tx_access_list(&mut self, _value: &[u8]) {}
     fn set_tx_blob_hashes(&mut self, _value: &[u8]) {}
+    fn set_tx_r(&mut self, _value: &[u8]) {}
+    fn set_tx_s(&mut self, _value: &[u8]) {}
+    fn set_tx_v(&mut self, _value: u64) {}
 
     fn set_opt_check_nonce(&mut self, _value: bool) {}
     fn set_opt_no_base_fee(&mut self, _value: bool) {}
@@ -122,6 +125,7 @@ pub fn exec_tx_set_property_uint64<T: TransactionExecutor>(
         capi::TX_PROPERTY_BLOCK_EXCESS_BLOB_GAS => tx.set_block_excess_blob_gas(value),
         capi::TX_PROPERTY_TX_NONCE => tx.set_tx_nonce(value),
         capi::TX_PROPERTY_TX_GAS_LIMIT => tx.set_tx_gas_limit(&value.to_be_bytes()),
+        capi::TX_PROPERTY_TX_V => tx.set_tx_v(value),
         capi::TX_PROPERTY_OPT_CHECK_NONCE => tx.set_opt_check_nonce(value != 0),
         capi::TX_PROPERTY_OPT_NO_BASE_FEE => tx.set_opt_no_base_fee(value != 0),
         _ => {
@@ -157,6 +161,8 @@ pub fn exec_tx_set_property_data<T: TransactionExecutor>(
         capi::TX_PROPERTY_TX_DATA => tx.set_tx_data(slice),
         capi::TX_PROPERTY_TX_ACCESS_LIST => tx.set_tx_access_list(slice),
         capi::TX_PROPERTY_TX_BLOB_HASHES => tx.set_tx_blob_hashes(slice),
+        capi::TX_PROPERTY_TX_R => tx.set_tx_r(slice),
+        capi::TX_PROPERTY_TX_S => tx.set_tx_s(slice),
         _ => {
             println!("Unknown property [data]: 0x{:x}", property);
         }

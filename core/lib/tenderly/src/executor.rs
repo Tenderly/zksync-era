@@ -7,7 +7,7 @@ use multivm::VmInstance;
 use multivm::zk_evm_latest::ethereum_types::{H256, U256};
 use zksync_state::{ReadStorage, StorageView};
 use zksync_types::{Address, Execute, L2ChainId, L2TxCommonData, Nonce, PackedEthSignature, StorageKey, StorageValue, Transaction};
-use tenderly_cffi::{GetBalanceFunc, GetCodeFunc, GetCodeHashFunc, GetCodeLengthFunc, GetNonceFunc, GetStorageFunc, TransactionExecutor};
+use tenderly_cffi::{GetBalanceFunc, GetCodeByHashFunc, GetCodeFunc, GetCodeHashFunc, GetCodeLengthByHashFunc, GetCodeLengthFunc, GetNonceFunc, GetStorageFunc, TransactionExecutor};
 use zksync_contracts::BaseSystemContracts;
 use zksync_types::ExecuteTransactionCommon::L2;
 use zksync_types::fee::Fee;
@@ -46,7 +46,9 @@ struct DataProvider {
     get_code_length: GetCodeLengthFunc,
     get_code_hash: GetCodeHashFunc,
     get_balance: GetBalanceFunc,
-    get_nonce: GetNonceFunc
+    get_nonce: GetNonceFunc,
+    get_code_by_hash: GetCodeByHashFunc,
+    get_code_length_by_hash: GetCodeLengthByHashFunc,
 }
 
 impl TransactionExecutorImpl {
@@ -172,6 +174,8 @@ impl TransactionExecutor for TransactionExecutorImpl {
     fn set_env_get_code_length(&mut self, _value: GetCodeLengthFunc) { self.storage.get_code_length = _value; }
     fn set_env_get_code(&mut self, _value: GetCodeFunc) { self.storage.get_code = _value; }
     fn set_env_get_storage(&mut self, _value: GetStorageFunc) { self.storage.get_storage = _value; }
+    fn set_env_get_code_by_hash(&mut self, _value: GetCodeByHashFunc) { self.storage.get_code_by_hash = _value; }
+    fn set_env_get_code_length_by_hash(&mut self, _value: GetCodeLengthByHashFunc) { self.storage.get_code_length_by_hash = _value; }
 
     fn execute(&mut self) {
         let l1_batch_env = self.l1_batch_env();
@@ -206,6 +210,8 @@ impl Default for DataProvider {
             get_code_hash: Box::new(|_, _| {}),
             get_balance: Box::new(|_, _| {}),
             get_nonce: Box::new(|_| 0),
+            get_code_by_hash: Box::new(|_, _| {}),
+            get_code_length_by_hash: Box::new(|_| 0),
         }
     }
 }
@@ -229,8 +235,14 @@ impl ReadStorage for &mut DataProvider {
         todo!("is_write_initial not implemented")
     }
 
-    fn load_factory_dep(&mut self, _hash: H256) -> Option<Vec<u8>> {
-        todo!("load_factory_deps not implemented")
+    fn load_factory_dep(&mut self, hash: H256) -> Option<Vec<u8>> {
+        let bytecode_size = u16::from_be_bytes([hash[2], hash[3]]) * 32;
+        // println!("Calculated bytecode size: {}", bytecode_size);
+        // let bytecode_size = self.get_code_length_by_hash.call_mut((hash.as_fixed_bytes(),));
+        // println!("Fetched bytecode size: {}", bytecode_size);
+        let mut bytecode = vec![0u8; bytecode_size as usize];
+        self.get_code_by_hash.call_mut((hash.as_fixed_bytes(), bytecode.as_mut_slice()));
+        Some(bytecode)
     }
 
     fn get_enumeration_index(&mut self, _key: &StorageKey) -> Option<u64> {

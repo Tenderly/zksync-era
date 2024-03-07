@@ -45,6 +45,8 @@ void exec_free_tx_executor(TransactionExecutor *tx);
 #define TX_PROPERTY_ENV_GET_CODE_LENGTH 0x303
 #define TX_PROPERTY_ENV_GET_CODE 0x304
 #define TX_PROPERTY_ENV_GET_STORAGE 0x305
+#define TX_PROPERTY_ENV_GET_CODE_BY_HASH 0x306
+#define TX_PROPERTY_ENV_GET_CODE_LENGTH_BY_HASH 0x307
 
 typedef uint64_t (*GetNonceCallback)(uint8_t *addr, void *data);
 typedef void (*GetBalanceCallback)(uint8_t *addr, uint8_t *result, void *data);
@@ -52,6 +54,8 @@ typedef void (*GetCodeHashCallback)(uint8_t *addr, uint8_t *result, void *data);
 typedef uint64_t (*GetCodeLengthCallback)(uint8_t *addr, void *data);
 typedef void (*GetCodeCallback)(uint8_t *addr, uint8_t *result, void *data);
 typedef void (*GetStorageCallback)(uint8_t *addr, uint8_t *key, uint8_t *result, void *data);
+typedef void (*GetCodeByHashCallback)(uint8_t *hash, uint8_t *result, void *data);
+typedef uint64_t (*GetCodeLengthByHashCallback)(uint8_t *hash, void *data);
 
 void exec_tx_set_property_uint64(TransactionExecutor *tx, uint64_t property, uint64_t value);
 void exec_tx_set_property_data(TransactionExecutor *tx, uint64_t property, void *data, uint64_t size);

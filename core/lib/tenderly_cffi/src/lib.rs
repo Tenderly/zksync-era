@@ -19,6 +19,9 @@ type GetCodeLengthFn = extern "C" fn(address: *const u8, data: *const c_void) ->
 type GetCodeFn = extern "C" fn(address: *const u8, result: *mut u8, data: *const c_void);
 type GetStorageFn =
     extern "C" fn(address: *const u8, key: *const u8, result: *mut u8, data: *const c_void);
+type GetCodeByHashFn = extern "C" fn(hash: *const u8, result: *mut u8, data: *const c_void);
+type GetCodeLengthByHashFn = extern "C" fn(hash: *const u8, data: *const c_void) -> u64;
+
 
 pub type Address = [u8; 20];
 pub type Hash = [u8; 32];
@@ -29,6 +32,8 @@ pub type GetCodeHashFunc = Box<dyn FnMut(&Address, &mut Hash)>;
 pub type GetCodeLengthFunc = Box<dyn FnMut(&Address) -> u64>;
 pub type GetCodeFunc = Box<dyn FnMut(&Address, &mut [u8])>;
 pub type GetStorageFunc = Box<dyn FnMut(&Address, &Hash, &mut Hash)>;
+pub type GetCodeByHashFunc = Box<dyn FnMut(&Hash, &mut [u8])>;
+pub type GetCodeLengthByHashFunc = Box<dyn FnMut(&Hash) -> u64>;
 
 pub trait TransactionExecutor: Default {
     fn set_block_number(&mut self, _value: u64) {}
@@ -67,6 +72,8 @@ pub trait TransactionExecutor: Default {
     fn set_env_get_code_length(&mut self, _value: GetCodeLengthFunc) {}
     fn set_env_get_code(&mut self, _value: GetCodeFunc) {}
     fn set_env_get_storage(&mut self, _value: GetStorageFunc) {}
+    fn set_env_get_code_by_hash(&mut self, _value: GetCodeByHashFunc) {}
+    fn set_env_get_code_length_by_hash(&mut self, _value: GetCodeLengthByHashFunc) {}
 
     fn execute(&mut self) {}
 
@@ -209,6 +216,16 @@ pub fn exec_tx_set_property_func<T: TransactionExecutor>(
             tx.set_env_get_storage(Box::new(move |address, key, result| {
                 callback(address.as_ptr(), key.as_ptr(), result.as_mut_ptr(), data)
             }))
+        }
+        capi::TX_PROPERTY_ENV_GET_CODE_BY_HASH => {
+            let callback: GetCodeByHashFn = unsafe { std::mem::transmute(callback) };
+            tx.set_env_get_code_by_hash(Box::new(move |hash, result| {
+                callback(hash.as_ptr(), result.as_mut_ptr(), data)
+            }))
+        }
+        capi::TX_PROPERTY_ENV_GET_CODE_LENGTH_BY_HASH => {
+            let callback: GetCodeLengthByHashFn = unsafe { std::mem::transmute(callback) };
+            tx.set_env_get_code_length_by_hash(Box::new(move |hash| callback(hash.as_ptr(), data)))
         }
         _ => {
             println!("Unknown property [func]: 0x{:x}", property);

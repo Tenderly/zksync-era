@@ -35,6 +35,10 @@ void exec_free_tx_executor(TransactionExecutor *tx);
 #define TX_PROPERTY_TX_R 0x10D
 #define TX_PROPERTY_TX_S 0x10E
 #define TX_PROPERTY_TX_V 0x10F
+#define TX_PROPERTY_TX_TYPE 0x110
+#define TX_PROPERTY_TX_MAX_PRIORITY_FEE_PER_GAS 0x111
+#define TX_PROPERTY_TX_MAX_FEE_PER_GAS 0x112
+#define TX_PROPERTY_TX_GAS_PER_PUBDATA 0x113
 
 #define TX_PROPERTY_OPT_CHECK_NONCE 0x200
 #define TX_PROPERTY_OPT_NO_BASE_FEE 0x201
@@ -47,6 +51,12 @@ void exec_free_tx_executor(TransactionExecutor *tx);
 #define TX_PROPERTY_ENV_GET_STORAGE 0x305
 #define TX_PROPERTY_ENV_GET_CODE_BY_HASH 0x306
 #define TX_PROPERTY_ENV_GET_CODE_LENGTH_BY_HASH 0x307
+
+#define TX_PROPERTY_BATCH_NUMBER 0x400
+#define TX_PROPERTY_BATCH_TIMESTAMP 0x401
+#define TX_PROPERTY_BATCH_L1_GAS_PRICE 0x402
+#define TX_PROPERTY_BATCH_L2_FAIR_GAS_PRICE 0x403
+#define TX_PROPERTY_BATCH_PARENT_HASH 0x404
 
 typedef uint64_t (*GetNonceCallback)(uint8_t *addr, void *data);
 typedef void (*GetBalanceCallback)(uint8_t *addr, uint8_t *result, void *data);

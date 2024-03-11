@@ -6,7 +6,7 @@ use multivm::vm_latest::HistoryEnabled;
 use multivm::VmInstance;
 use multivm::zk_evm_latest::ethereum_types::{H256, U256};
 use zksync_state::{ReadStorage, StorageView};
-use zksync_types::{Address, Execute, L2ChainId, L2TxCommonData, Nonce, PackedEthSignature, StorageKey, StorageValue, Transaction};
+use zksync_types::{Address, Execute, L1BatchNumber, L2ChainId, L2TxCommonData, Nonce, PackedEthSignature, StorageKey, StorageValue, Transaction};
 use tenderly_cffi::{GetBalanceFunc, GetCodeByHashFunc, GetCodeFunc, GetCodeHashFunc, GetCodeLengthByHashFunc, GetCodeLengthFunc, GetNonceFunc, GetStorageFunc, TransactionExecutor};
 use zksync_contracts::BaseSystemContracts;
 use zksync_types::ExecuteTransactionCommon::L2;
@@ -34,6 +34,12 @@ pub struct TransactionExecutorImpl {
     block_number: u32,
     block_timestamp: u64,
     block_parent_hash: H256,
+
+    batch_number: u32,
+    batch_timestamp: u64,
+    batch_l1_gas_price: u64,
+    batch_l2_fair_gas_price: u64,
+    batch_parent_hash: Option<H256>,
 
     execution_result: VmExecutionResultAndLogs,
 
@@ -69,6 +75,11 @@ impl TransactionExecutorImpl {
             block_number: 0,
             block_timestamp: 0,
             block_parent_hash: Default::default(),
+            batch_number: 0,
+            batch_timestamp: 0,
+            batch_l1_gas_price: 0,
+            batch_l2_fair_gas_price: 0,
+            batch_parent_hash: Default::default(),
             execution_result: VmExecutionResultAndLogs {
                 result: Success { output: vec![] },
                 logs: Default::default(),
@@ -81,52 +92,55 @@ impl TransactionExecutorImpl {
 
     fn l1_batch_env(&self) -> L1BatchEnv {
         L1BatchEnv {
-            previous_batch_hash: None,
-            number: Default::default(),
-            timestamp: 0,
-            fee_input: L1Pegged(L1PeggedBatchFeeModelInput { fair_l2_gas_price: 0, l1_gas_price: 0 }),
-            fee_account: Default::default(),
-            enforced_base_fee: None,
+            previous_batch_hash: self.batch_parent_hash, // OK
+            number: L1BatchNumber::from(self.batch_number), // OK
+            timestamp: self.batch_timestamp, // OK
+            fee_input: L1Pegged(L1PeggedBatchFeeModelInput {
+                fair_l2_gas_price: self.batch_l2_fair_gas_price,
+                l1_gas_price: self.batch_l1_gas_price
+            }), // OK
+            fee_account: Default::default(), // TODO
+            enforced_base_fee: None, // TODO
             first_l2_block: L2BlockEnv {
-                number: self.block_number,
-                timestamp: self.block_timestamp,
-                prev_block_hash: self.block_parent_hash,
-                max_virtual_blocks_to_create: 1,
+                number: self.block_number, // OK
+                timestamp: self.block_timestamp, // OK
+                prev_block_hash: self.block_parent_hash, // OK
+                max_virtual_blocks_to_create: 0, // TODO
             },
         }
     }
 
     fn system_env(&self) -> SystemEnv {
         SystemEnv {
-            zk_porter_available: false,
-            version: Default::default(),
-            base_system_smart_contracts: BaseSystemContracts::load_from_disk(),
-            gas_limit: BLOCK_GAS_LIMIT,
-            execution_mode: TxExecutionMode::EthCall,
-            default_validation_computational_gas_limit: BLOCK_GAS_LIMIT,
-            chain_id: L2ChainId::from(324),
+            zk_porter_available: false, // Probably OK
+            version: Default::default(), // TODO
+            base_system_smart_contracts: BaseSystemContracts::load_from_disk(), // TODO: probably okay
+            gas_limit: BLOCK_GAS_LIMIT, // TODO
+            execution_mode: TxExecutionMode::EthCall, // TODO: probably okay
+            default_validation_computational_gas_limit: BLOCK_GAS_LIMIT, // TODO: probably okay
+            chain_id: L2ChainId::from(324), // OK, maybe take as argument because of testnets / rollups
         }
     }
 
     fn transaction(&self) -> Transaction {
         Transaction {
             common_data: L2(L2TxCommonData {
-                nonce: self.nonce,
-                fee: self.fee.clone(),
-                initiator_address: self.from,
-                signature: PackedEthSignature::from_rsv(&self.r, &self.s, self.v).serialize_packed().to_vec(),
-                transaction_type: self.transaction_type,
-                input: None, // not to be confused with calldata
-                paymaster_params: self.paymaster_params.clone(),
+                nonce: self.nonce, // OK
+                fee: self.fee.clone(), // OK
+                initiator_address: self.from, // OK
+                signature: PackedEthSignature::from_rsv(&self.r, &self.s, self.v).serialize_packed().to_vec(), // TODO check if this is okay
+                transaction_type: self.transaction_type, // OK
+                input: None, // TODO check if needed, not to be confused with calldata
+                paymaster_params: self.paymaster_params.clone(), // TODO
             }),
             execute: Execute{
-                contract_address: self.to,
-                calldata: self.calldata.clone(),
-                value: self.value,
-                factory_deps: self.factory_deps.clone(),
+                contract_address: self.to, // OK
+                calldata: self.calldata.clone(), // OK
+                value: self.value, // Should be OK
+                factory_deps: self.factory_deps.clone(), // TODO
             },
-            received_timestamp_ms: 0,
-            raw_bytes: None,
+            received_timestamp_ms: 0, // TODO
+            raw_bytes: None, // Should be OK
         }
     }
 }
@@ -164,6 +178,10 @@ impl TransactionExecutor for TransactionExecutorImpl {
     fn set_tx_r(&mut self, _value: &[u8]) { self.r.assign_from_slice(_value); }
     fn set_tx_s(&mut self, _value: &[u8]) { self.s.assign_from_slice(_value); }
     fn set_tx_v(&mut self, _value: u64) { self.v = _value as u8; }
+    fn set_tx_type(&mut self, _value: u64) { self.transaction_type = TransactionType::try_from(_value as u32).unwrap(); }
+    fn set_tx_max_fee_per_gas(&mut self, _value: &[u8]) { self.fee.max_fee_per_gas = U256::from(_value); }
+    fn set_tx_max_priority_fee_per_gas(&mut self, _value: &[u8]) { self.fee.max_priority_fee_per_gas = U256::from(_value); }
+    fn set_tx_gas_per_pubdata(&mut self, _value: &[u8]) { self.fee.gas_per_pubdata_limit = U256::from(_value); }
 
     fn set_opt_check_nonce(&mut self, _value: bool) {}
     fn set_opt_no_base_fee(&mut self, _value: bool) {}
@@ -176,6 +194,12 @@ impl TransactionExecutor for TransactionExecutorImpl {
     fn set_env_get_storage(&mut self, _value: GetStorageFunc) { self.storage.get_storage = _value; }
     fn set_env_get_code_by_hash(&mut self, _value: GetCodeByHashFunc) { self.storage.get_code_by_hash = _value; }
     fn set_env_get_code_length_by_hash(&mut self, _value: GetCodeLengthByHashFunc) { self.storage.get_code_length_by_hash = _value; }
+
+    fn set_batch_number(&mut self, _value: u64) { self.batch_number = _value as u32; }
+    fn set_batch_timestamp(&mut self, _value: u64) { self.batch_timestamp = _value; }
+    fn set_batch_l1_gas_price(&mut self, _value: u64) { self.batch_l1_gas_price = _value; }
+    fn set_batch_l2_fair_gas_price(&mut self, _value: u64) { self.batch_l2_fair_gas_price = _value; }
+    fn set_batch_parent_hash(&mut self, _value: &[u8]) { self.batch_parent_hash = Some(H256::from_slice(_value)); }
 
     fn execute(&mut self) {
         let l1_batch_env = self.l1_batch_env();

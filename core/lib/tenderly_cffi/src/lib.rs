@@ -62,6 +62,11 @@ pub trait TransactionExecutor: Default {
     fn set_tx_r(&mut self, _value: &[u8]) {}
     fn set_tx_s(&mut self, _value: &[u8]) {}
     fn set_tx_v(&mut self, _value: u64) {}
+    fn set_tx_type(&mut self, _value: u64) {}
+    fn set_tx_max_fee_per_gas(&mut self, _value: &[u8]) {}
+    fn set_tx_max_priority_fee_per_gas(&mut self, _value: &[u8]) {}
+    fn set_tx_gas_per_pubdata(&mut self, _value: &[u8]) {}
+
 
     fn set_opt_check_nonce(&mut self, _value: bool) {}
     fn set_opt_no_base_fee(&mut self, _value: bool) {}
@@ -74,6 +79,13 @@ pub trait TransactionExecutor: Default {
     fn set_env_get_storage(&mut self, _value: GetStorageFunc) {}
     fn set_env_get_code_by_hash(&mut self, _value: GetCodeByHashFunc) {}
     fn set_env_get_code_length_by_hash(&mut self, _value: GetCodeLengthByHashFunc) {}
+
+    fn set_batch_number(&mut self, _value: u64) {}
+    fn set_batch_timestamp(&mut self, _value: u64) {}
+    fn set_batch_l1_gas_price(&mut self, _value: u64) {}
+    fn set_batch_l2_fair_gas_price(&mut self, _value: u64) {}
+    fn set_batch_parent_hash(&mut self, _value: &[u8]) {}
+
 
     fn execute(&mut self) {}
 
@@ -133,6 +145,11 @@ pub fn exec_tx_set_property_uint64<T: TransactionExecutor>(
         capi::TX_PROPERTY_TX_NONCE => tx.set_tx_nonce(value),
         capi::TX_PROPERTY_TX_GAS_LIMIT => tx.set_tx_gas_limit(&value.to_be_bytes()),
         capi::TX_PROPERTY_TX_V => tx.set_tx_v(value),
+        capi::TX_PROPERTY_TX_TYPE => tx.set_tx_type(value),
+        capi::TX_PROPERTY_BATCH_NUMBER => tx.set_batch_number(value),
+        capi::TX_PROPERTY_BATCH_TIMESTAMP => tx.set_batch_timestamp(value),
+        capi::TX_PROPERTY_BATCH_L1_GAS_PRICE => tx.set_batch_l1_gas_price(value),
+        capi::TX_PROPERTY_BATCH_L2_FAIR_GAS_PRICE => tx.set_batch_l2_fair_gas_price(value),
         capi::TX_PROPERTY_OPT_CHECK_NONCE => tx.set_opt_check_nonce(value != 0),
         capi::TX_PROPERTY_OPT_NO_BASE_FEE => tx.set_opt_no_base_fee(value != 0),
         _ => {
@@ -170,6 +187,10 @@ pub fn exec_tx_set_property_data<T: TransactionExecutor>(
         capi::TX_PROPERTY_TX_BLOB_HASHES => tx.set_tx_blob_hashes(slice),
         capi::TX_PROPERTY_TX_R => tx.set_tx_r(slice),
         capi::TX_PROPERTY_TX_S => tx.set_tx_s(slice),
+        capi::TX_PROPERTY_TX_MAX_FEE_PER_GAS => tx.set_tx_max_fee_per_gas(slice),
+        capi::TX_PROPERTY_TX_MAX_PRIORITY_FEE_PER_GAS => tx.set_tx_max_priority_fee_per_gas(slice),
+        capi::TX_PROPERTY_TX_GAS_PER_PUBDATA => tx.set_tx_gas_per_pubdata(slice),
+        capi::TX_PROPERTY_BATCH_PARENT_HASH => tx.set_batch_parent_hash(slice),
         _ => {
             println!("Unknown property [data]: 0x{:x}", property);
         }

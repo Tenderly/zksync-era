@@ -1,4 +1,6 @@
 use std::fmt::{Debug, Formatter};
+use std::panic;
+use std::panic::{AssertUnwindSafe};
 use multivm::interface::{L1BatchEnv, L2BlockEnv, SystemEnv, TxExecutionMode, VmExecutionMode, VmExecutionResultAndLogs, VmInterface};
 use multivm::interface::ExecutionResult::Success;
 use multivm::vm_latest::constants::BLOCK_GAS_LIMIT;
@@ -6,7 +8,7 @@ use multivm::vm_latest::HistoryEnabled;
 use multivm::VmInstance;
 use multivm::zk_evm_latest::ethereum_types::{H256, U256};
 use zksync_state::{ReadStorage, StorageView};
-use zksync_types::{Address, Execute, L1BatchNumber, L2ChainId, L2TxCommonData, Nonce, PackedEthSignature, StorageKey, StorageValue, Transaction};
+use zksync_types::{Address, Execute, L1BatchNumber, L2ChainId, L2TxCommonData, Nonce, PackedEthSignature, ProtocolVersionId, StorageKey, StorageValue, Transaction};
 use tenderly_cffi::{GetBalanceFunc, GetCodeByHashFunc, GetCodeFunc, GetCodeHashFunc, GetCodeLengthByHashFunc, GetCodeLengthFunc, GetNonceFunc, GetStorageFunc, TransactionExecutor};
 use zksync_contracts::BaseSystemContracts;
 use zksync_types::ExecuteTransactionCommon::L2;
@@ -113,9 +115,9 @@ impl TransactionExecutorImpl {
     fn system_env(&self) -> SystemEnv {
         SystemEnv {
             zk_porter_available: false, // Probably OK
-            version: Default::default(), // TODO
+            version: ProtocolVersionId::Version22, // TODO
             base_system_smart_contracts: BaseSystemContracts::load_from_disk(), // TODO: probably okay
-            gas_limit: BLOCK_GAS_LIMIT, // TODO
+            gas_limit: BLOCK_GAS_LIMIT, // TODO: probably okay
             execution_mode: TxExecutionMode::EthCall, // TODO: probably okay
             default_validation_computational_gas_limit: BLOCK_GAS_LIMIT, // TODO: probably okay
             chain_id: L2ChainId::from(324), // OK, maybe take as argument because of testnets / rollups
@@ -205,11 +207,19 @@ impl TransactionExecutor for TransactionExecutorImpl {
         let l1_batch_env = self.l1_batch_env();
         let system_env = self.system_env();
         let transaction = self.transaction();
-        let storage_ptr = StorageView::new(&mut self.storage).to_rc_ptr();
 
-        let mut vm:VmInstance<StorageView<&mut DataProvider>, HistoryEnabled> = VmInstance::new(l1_batch_env, system_env, storage_ptr);
-        vm.push_transaction(transaction);
-        self.execution_result = vm.execute(VmExecutionMode::OneTx);
+        let panic_result = panic::catch_unwind(AssertUnwindSafe(|| {
+            let storage_ptr = StorageView::new(&mut self.storage).to_rc_ptr();
+
+            let mut vm: VmInstance<StorageView<&mut DataProvider>, HistoryEnabled> = VmInstance::new(l1_batch_env, system_env, storage_ptr);
+            vm.push_transaction(transaction);
+            vm.execute(VmExecutionMode::OneTx)
+        }));
+
+        match panic_result {
+            Ok(vm_execution_result) => { self.execution_result = vm_execution_result; }
+            Err(_) => {}
+        }
     }
 
     fn get_used_gas(&self) -> u64 {

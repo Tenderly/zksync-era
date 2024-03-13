@@ -266,6 +266,7 @@ pub fn exec_tx_get_output_uint64<T: TransactionExecutor>(
     let tx = unsafe { &mut *tx };
     match output {
         capi::TX_OUTPUT_USED_GAS => tx.get_used_gas(),
+        capi::TX_OUTPUT_RETURN_DATA => tx.get_return_data().len() as u64,
         _ => {
             println!("Unknown output [uint64]: 0x{:x}", output);
             0
